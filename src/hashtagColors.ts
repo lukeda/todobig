@@ -1,6 +1,8 @@
 // Deterministic color assignment: same hashtag always gets the same color.
 // Uses a curated palette of accessible, distinct hues.
 
+import type { TagColor } from './store';
+
 const PALETTE: { bg: string; fg: string; label: string }[] = [
   { bg: '#e3f2fd', fg: '#1565c0', label: 'blue' },
   { bg: '#e8f5e9', fg: '#2e7d32', label: 'green' },
@@ -42,17 +44,29 @@ export function getContrastColor(bgHex: string): string {
   return luminance > 128 ? '#000000' : '#ffffff';
 }
 
+export function deriveBgFromFg(fgHex: string): string {
+  const rgb = hexToRgb(fgHex);
+  if (!rgb) return '#f0f0f0';
+  const mix = (c: number) => Math.round(c + (255 - c) * 0.85);
+  return `#${mix(rgb.r).toString(16).padStart(2, '0')}${mix(rgb.g).toString(16).padStart(2, '0')}${mix(rgb.b).toString(16).padStart(2, '0')}`;
+}
+
 export function colorForTag(
   tag: string,
-  customColors?: Record<string, string>
+  customColors?: Record<string, TagColor>
 ): { bg: string; fg: string; label: string } {
   const key = tag.toLowerCase();
-  if (customColors?.[key]) {
-    return {
-      bg: customColors[key],
-      fg: getContrastColor(customColors[key]),
-      label: 'custom',
-    };
+  const custom = customColors?.[key];
+  
+  if (custom) {
+    const { bg, fg } = custom;
+    if (bg && fg) {
+      return { bg, fg, label: 'custom' };
+    } else if (bg) {
+      return { bg, fg: getContrastColor(bg), label: 'custom' };
+    } else if (fg) {
+      return { bg: deriveBgFromFg(fg), fg, label: 'custom' };
+    }
   }
   return PALETTE[hash(key) % PALETTE.length];
 }
