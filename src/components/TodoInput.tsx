@@ -1,0 +1,175 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActionIcon,
+  Box,
+  Card,
+  Stack,
+  Text,
+  Textarea,
+  useMantineTheme,
+} from '@mantine/core';
+import { Plus } from 'lucide-react';
+import { parseTags, type Todo } from '../types';
+
+export function TodoInput({
+  onAdd,
+  tags,
+}: {
+  onAdd: (todo: Todo) => void;
+  tags: string[];
+}) {
+  const theme = useMantineTheme();
+  const [draft, setDraft] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const wasFocusedRef = useRef(true);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!wasFocusedRef.current) {
+        textareaRef.current?.focus();
+      }
+      wasFocusedRef.current = true;
+    };
+
+    const handleBlur = () => {
+      wasFocusedRef.current = false;
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+
+  const addTodo = () => {
+    const { text, tags: parsedTags } = parseTags(draft);
+    if (!text) return;
+    onAdd({
+      id: crypto.randomUUID(),
+      text,
+      tags: parsedTags,
+      done: false,
+      createdAt: Date.now(),
+    });
+    setDraft('');
+  };
+
+  const currentTag = useMemo(() => {
+    const el = textareaRef.current;
+    const value = draft;
+    const cursor = el?.selectionStart ?? value.length;
+    const before = value.slice(0, cursor);
+    const match = before.match(/#(\w*)$/);
+    return match ? match[1].toLowerCase() : null;
+  }, [draft]);
+
+  const suggestions = useMemo(() => {
+    if (currentTag === null) return [];
+    return tags
+      .filter((t) => t.includes(currentTag) && t !== currentTag)
+      .slice(0, 6)
+      .map((t) => `#${t}`);
+  }, [currentTag, tags]);
+
+  const applySuggestion = (val: string) => {
+    const el = textareaRef.current;
+    const value = draft;
+    const cursor = el?.selectionStart ?? value.length;
+    const before = value.slice(0, cursor);
+    const after = value.slice(cursor);
+    const replaced = before.replace(/#(\w*)$/, val);
+    const next = replaced + after;
+    setDraft(next);
+    requestAnimationFrame(() => {
+      const pos = replaced.length;
+      el?.focus();
+      el?.setSelectionRange(pos, pos);
+    });
+  };
+
+  return (
+    <Box style={{ position: 'relative' }}>
+      <Textarea
+        ref={textareaRef}
+        value={draft}
+        onChange={(e) => setDraft(e.currentTarget.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            addTodo();
+          }
+        }}
+        placeholder="Type #hashtag then your task… (Enter to add)"
+        autosize
+        minRows={2}
+        radius="md"
+        size="md"
+        autoFocus
+        rightSection={
+          <ActionIcon
+            variant="filled"
+            color="blue"
+            onClick={addTodo}
+            aria-label="Add todo"
+            style={{ marginRight: 6 }}
+          >
+            <Plus size={18} />
+          </ActionIcon>
+        }
+      />
+      {suggestions.length > 0 && currentTag !== null && (
+        <Box
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            zIndex: 50,
+          }}
+          mt={4}
+        >
+          <Card
+            shadow="md"
+            padding={4}
+            radius="md"
+            withBorder
+            style={{ overflow: 'hidden' }}
+          >
+            <Stack gap={0}>
+              {suggestions.map((s) => (
+                <Box
+                  key={s}
+                  px="sm"
+                  py={6}
+                  style={{
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    applySuggestion(s);
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor =
+                      theme.colors.gray[1];
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor =
+                      'transparent';
+                  }}
+                >
+                  <Text size="sm" c="gray.7">
+                    {s}
+                  </Text>
+                </Box>
+              ))}
+            </Stack>
+          </Card>
+        </Box>
+      )}
+    </Box>
+  );
+}
