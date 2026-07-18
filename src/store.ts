@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { createTauriStore } from '@tauri-store/zustand';
-import { Todo } from './types';
+import { create } from "zustand";
+import { createTauriStore } from "@tauri-store/zustand";
+import { Todo, TodoStatus } from "./types";
 
 export type TagColor = { bg?: string; fg?: string };
 
@@ -10,9 +10,10 @@ interface AppState {
   selectedTags: string[];
   customTagColors: Record<string, TagColor>;
   tagPopoverOpened: boolean;
+  migrated: boolean;
 
   addTodo: (todo: Todo) => void;
-  toggleTodo: (id: string) => void;
+  setTodoStatus: (id: string, status: TodoStatus) => void;
   deleteTodo: (id: string) => void;
   setSelectedTags: (tags: string[]) => void;
   setCustomTagColors: (colors: Record<string, TagColor>) => void;
@@ -27,6 +28,7 @@ export const useStore = create<AppState>((set) => ({
   selectedTags: [],
   customTagColors: {},
   tagPopoverOpened: false,
+  migrated: false,
 
   addTodo: (todo) =>
     set((state) => {
@@ -37,11 +39,9 @@ export const useStore = create<AppState>((set) => ({
       };
     }),
 
-  toggleTodo: (id) =>
+  setTodoStatus: (id, status) =>
     set((state) => ({
-      todos: state.todos.map((t) =>
-        t.id === id ? { ...t, done: !t.done } : t
-      ),
+      todos: state.todos.map((t) => (t.id === id ? { ...t, status } : t)),
     })),
 
   deleteTodo: (id) =>
@@ -64,8 +64,8 @@ export const useStore = create<AppState>((set) => ({
   setTagPopoverOpened: (opened) => set({ tagPopoverOpened: opened }),
 }));
 
-export const tauriHandler = createTauriStore('todobig-storage', useStore, {
+export const tauriHandler = createTauriStore("todobig-storage", useStore, {
   saveOnChange: true,
-  saveStrategy: 'debounce',
+  saveStrategy: "debounce",
   saveInterval: 1000,
 });

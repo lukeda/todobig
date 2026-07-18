@@ -13,7 +13,7 @@ function App() {
   const todos = useStore((s) => s.todos);
   const selectedTags = useStore((s) => s.selectedTags);
   const addTodo = useStore((s) => s.addTodo);
-  const toggleTodo = useStore((s) => s.toggleTodo);
+  const setTodoStatus = useStore((s) => s.setTodoStatus);
   const deleteTodo = useStore((s) => s.deleteTodo);
   const tags = useStore((s) => s.tags);
 
@@ -26,8 +26,8 @@ function App() {
   const { active, completed } = useMemo(() => {
     const sorted = [...todos].sort((a, b) => b.createdAt - a.createdAt);
     return {
-      active: sorted.filter((t) => !t.done),
-      completed: sorted.filter((t) => t.done),
+      active: sorted.filter((t) => t.status !== 'complete'),
+      completed: sorted.filter((t) => t.status === 'complete'),
     };
   }, [todos]);
 
@@ -81,7 +81,7 @@ function App() {
           <TodoList
             todos={filteredActive}
             title="To do"
-            onToggle={toggleTodo}
+            onSetStatus={setTodoStatus}
             onDelete={deleteTodo}
           />
 
@@ -89,7 +89,7 @@ function App() {
             todos={filteredCompleted}
             title="Completed"
             dimmed
-            onToggle={toggleTodo}
+            onSetStatus={setTodoStatus}
             onDelete={deleteTodo}
           />
 

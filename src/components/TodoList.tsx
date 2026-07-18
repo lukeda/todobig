@@ -1,18 +1,18 @@
 import { Stack, Text } from '@mantine/core';
-import type { Todo } from '../types';
+import type { Todo, TodoStatus } from '../types';
 import { TodoRow } from './TodoRow';
 
 export function TodoList({
   todos,
   title,
   dimmed,
-  onToggle,
+  onSetStatus,
   onDelete,
 }: {
   todos: Todo[];
   title: string;
   dimmed?: boolean;
-  onToggle: (id: string) => void;
+  onSetStatus: (id: string, status: TodoStatus) => void;
   onDelete: (id: string) => void;
 }) {
   if (todos.length === 0) return null;
@@ -26,7 +26,7 @@ export function TodoList({
         <TodoRow
           key={t.id}
           todo={t}
-          onToggle={onToggle}
+          onSetStatus={onSetStatus}
           onDelete={onDelete}
         />
       ))}

@@ -51,7 +51,7 @@ export function TodoInput({
       id: crypto.randomUUID(),
       text,
       tags: parsedTags,
-      done: false,
+      status: 'not_started',
       createdAt: Date.now(),
     });
     setDraft('');

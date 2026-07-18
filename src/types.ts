@@ -1,8 +1,10 @@
+export type TodoStatus = 'not_started' | 'in_progress' | 'complete';
+
 export interface Todo {
   id: string;
   text: string;
   tags: string[];
-  done: boolean;
+  status: TodoStatus;
   createdAt: number;
 }
 

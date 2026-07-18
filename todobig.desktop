@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=TodoBig
+Exec=%h/.local/bin/todobig
+Terminal=false
+Categories=Utility;
