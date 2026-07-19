@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionIcon,
   Box,
@@ -20,6 +20,8 @@ export function TodoInput({
 }) {
   const theme = useMantineTheme();
   const [draft, setDraft] = useState('');
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const wasFocusedRef = useRef(true);
 
@@ -74,7 +76,14 @@ export function TodoInput({
       .map((t) => `#${t}`);
   }, [currentTag, tags]);
 
-  const applySuggestion = (val: string) => {
+  const suggestionsVisible = suggestions.length > 0 && currentTag !== null && !dismissed;
+
+  useEffect(() => {
+    setHighlightedIndex(0);
+    setDismissed(false);
+  }, [suggestions]);
+
+  const applySuggestion = useCallback((val: string) => {
     const el = textareaRef.current;
     const value = draft;
     const cursor = el?.selectionStart ?? value.length;
@@ -83,20 +92,46 @@ export function TodoInput({
     const replaced = before.replace(/#(\w*)$/, val);
     const next = replaced + after;
     setDraft(next);
+    setDismissed(true);
     requestAnimationFrame(() => {
       const pos = replaced.length;
       el?.focus();
       el?.setSelectionRange(pos, pos);
     });
-  };
+  }, [draft]);
 
   return (
     <Box style={{ position: 'relative' }}>
       <Textarea
         ref={textareaRef}
         value={draft}
-        onChange={(e) => setDraft(e.currentTarget.value)}
+        onChange={(e) => {
+          setDraft(e.currentTarget.value);
+          setDismissed(false);
+        }}
         onKeyDown={(e) => {
+          if (suggestionsVisible) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setHighlightedIndex((i) => (i + 1) % suggestions.length);
+              return;
+            }
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setHighlightedIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
+              return;
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              applySuggestion(suggestions[highlightedIndex]);
+              return;
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              setDismissed(true);
+              return;
+            }
+          }
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             addTodo();
@@ -120,7 +155,7 @@ export function TodoInput({
           </ActionIcon>
         }
       />
-      {suggestions.length > 0 && currentTag !== null && (
+      {suggestionsVisible && (
         <Box
           style={{
             position: 'absolute',
@@ -139,7 +174,7 @@ export function TodoInput({
             style={{ overflow: 'hidden' }}
           >
             <Stack gap={0}>
-              {suggestions.map((s) => (
+              {suggestions.map((s, i) => (
                 <Box
                   key={s}
                   px="sm"
@@ -147,18 +182,14 @@ export function TodoInput({
                   style={{
                     cursor: 'pointer',
                     borderRadius: 4,
+                    backgroundColor: i === highlightedIndex ? theme.colors.gray[1] : 'transparent',
                   }}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     applySuggestion(s);
                   }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor =
-                      theme.colors.gray[1];
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor =
-                      'transparent';
+                  onMouseEnter={() => {
+                    setHighlightedIndex(i);
                   }}
                 >
                   <Text size="sm" c="gray.7">
