@@ -8,7 +8,9 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import { ChevronDown, Circle, Clock, X } from "lucide-react";
+import { ChevronDown, Circle, Clock, GripVertical, X } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { Todo, TodoStatus } from "../types";
 import { HashtagBadge } from "./HashtagBadge";
 
@@ -80,7 +82,7 @@ function StatusIndicator({
   );
 }
 
-export function TodoRow({
+export function SortableTodoRow({
   todo,
   onSetStatus,
   onDelete,
@@ -89,9 +91,42 @@ export function TodoRow({
   onSetStatus: (id: string, status: TodoStatus) => void;
   onDelete: (id: string) => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: todo.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
-    <Card withBorder shadow="xs" padding="sm" radius="md">
+    <Card
+      withBorder
+      shadow="xs"
+      padding="sm"
+      radius="md"
+      ref={setNodeRef}
+      style={style}
+    >
       <Group gap="xs" align="center" wrap="nowrap">
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          style={{ cursor: "grab" }}
+        >
+          <GripVertical size={14} />
+        </ActionIcon>
         <StatusIndicator
           status={todo.status}
           onSetStatus={(status) => onSetStatus(todo.id, status)}
