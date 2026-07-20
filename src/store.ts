@@ -12,6 +12,7 @@ interface AppState {
   customTagColors: Record<string, TagColor>;
   tagPopoverOpened: boolean;
   migrated: boolean;
+  now: number;
 
   addTodo: (todo: Todo) => void;
   setTodoStatus: (id: string, status: TodoStatus) => void;
@@ -31,6 +32,7 @@ export const useStore = create<AppState>((set) => ({
   customTagColors: {},
   tagPopoverOpened: false,
   migrated: false,
+  now: Date.now(),
 
   addTodo: (todo) =>
     set((state) => {
@@ -43,7 +45,15 @@ export const useStore = create<AppState>((set) => ({
 
   setTodoStatus: (id, status) =>
     set((state) => ({
-      todos: state.todos.map((t) => (t.id === id ? { ...t, status } : t)),
+      todos: state.todos.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              status,
+              completedAt: status === "complete" ? Date.now() : undefined,
+            }
+          : t
+      ),
     })),
 
   deleteTodo: (id) =>
@@ -79,3 +89,7 @@ export const tauriHandler = createTauriStore("todobig-storage", useStore, {
   saveStrategy: "debounce",
   saveInterval: 1000,
 });
+
+setInterval(() => {
+  useStore.setState({ now: Date.now() });
+}, 60000);

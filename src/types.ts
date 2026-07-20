@@ -6,6 +6,7 @@ export interface Todo {
   tags: string[];
   status: TodoStatus;
   createdAt: number;
+  completedAt?: number;
 }
 
 export function parseTags(input: string): { text: string; tags: string[] } {
