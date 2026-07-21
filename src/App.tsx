@@ -13,6 +13,7 @@ function App() {
   const todos = useStore((s) => s.todos);
   const selectedTags = useStore((s) => s.selectedTags);
   const addTodo = useStore((s) => s.addTodo);
+  const updateTodo = useStore((s) => s.updateTodo);
   const setTodoStatus = useStore((s) => s.setTodoStatus);
   const deleteTodo = useStore((s) => s.deleteTodo);
   const reorderTodos = useStore((s) => s.reorderTodos);
@@ -83,6 +84,7 @@ function App() {
             title="To do"
             onSetStatus={setTodoStatus}
             onDelete={deleteTodo}
+            onUpdate={updateTodo}
             onReorder={reorderTodos}
           />
 
@@ -92,6 +94,7 @@ function App() {
             dimmed
             onSetStatus={setTodoStatus}
             onDelete={deleteTodo}
+            onUpdate={updateTodo}
             onReorder={reorderTodos}
           />
 

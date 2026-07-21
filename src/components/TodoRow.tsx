@@ -1,3 +1,4 @@
+import React from "react";
 import {
   ActionIcon,
   Badge,
@@ -8,6 +9,7 @@ import {
   Menu,
   Stack,
   Text,
+  TextInput,
 } from "@mantine/core";
 import { ChevronDown, Circle, Clock, GripVertical, X } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
@@ -145,11 +147,16 @@ export function SortableTodoRow({
   todo,
   onSetStatus,
   onDelete,
+  onUpdate,
 }: {
   todo: Todo;
   onSetStatus: (id: string, status: TodoStatus) => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, text: string) => void;
 }) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editText, setEditText] = React.useState(todo.text);
+
   const {
     attributes,
     listeners,
@@ -165,6 +172,28 @@ export function SortableTodoRow({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const handleSave = React.useCallback(() => {
+    const trimmed = editText.trim();
+    if (trimmed && trimmed !== todo.text) {
+      onUpdate(todo.id, trimmed);
+    } else {
+      setEditText(todo.text);
+    }
+    setIsEditing(false);
+  }, [editText, todo.id, todo.text, onUpdate]);
+
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        handleSave();
+      } else if (e.key === "Escape") {
+        setEditText(todo.text);
+        setIsEditing(false);
+      }
+    },
+    [handleSave, todo.text],
+  );
 
   return (
     <Card
@@ -192,25 +221,50 @@ export function SortableTodoRow({
         />
         <AgeBadge createdAt={todo.createdAt} completedAt={todo.completedAt} />
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-          <Text
-            size="sm"
-            style={{
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              textDecoration:
-                todo.status === "complete" ? "line-through" : undefined,
-            }}
-          >
-            {todo.text
-              .split(/(#\w+)/g)
-              .map((part, i) =>
-                part.startsWith("#") ? (
-                  <HashtagBadge key={i} tag={part.slice(1)} />
-                ) : (
-                  <span key={i}>{part}</span>
-                ),
-              )}
-          </Text>
+          {isEditing ? (
+            <TextInput
+              value={editText}
+              onChange={(e) => setEditText(e.currentTarget.value)}
+              onBlur={handleSave}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              size="sm"
+              style={{ flex: 1 }}
+            />
+          ) : (
+            <Group
+              gap={4}
+              wrap="nowrap"
+              align="center"
+              style={{ flex: 1 }}
+              className={
+                "border border-transparent p-0.5 rounded hover:border-blue-300 transition"
+              }
+            >
+              <Text
+                size="sm"
+                style={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  textDecoration:
+                    todo.status === "complete" ? "line-through" : undefined,
+                  flex: 1,
+                  cursor: "pointer",
+                }}
+                onClick={() => setIsEditing(true)}
+              >
+                {todo.text
+                  .split(/(#\w+)/g)
+                  .map((part, i) =>
+                    part.startsWith("#") ? (
+                      <HashtagBadge key={i} tag={part.slice(1)} />
+                    ) : (
+                      <span key={i}>{part}</span>
+                    ),
+                  )}
+              </Text>
+            </Group>
+          )}
         </Stack>
         <ActionIcon
           variant="subtle"

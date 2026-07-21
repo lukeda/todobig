@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createTauriStore } from "@tauri-store/zustand";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Todo, TodoStatus } from "./types";
+import { Todo, TodoStatus, parseTags } from "./types";
 
 export type TagColor = { bg?: string; fg?: string };
 
@@ -15,6 +15,7 @@ interface AppState {
   now: number;
 
   addTodo: (todo: Todo) => void;
+  updateTodo: (id: string, text: string) => void;
   setTodoStatus: (id: string, status: TodoStatus) => void;
   deleteTodo: (id: string) => void;
   reorderTodos: (activeId: string, overId: string) => void;
@@ -39,6 +40,18 @@ export const useStore = create<AppState>((set) => ({
       const mergedTags = new Set([...state.tags, ...todo.tags]);
       return {
         todos: [todo, ...state.todos],
+        tags: Array.from(mergedTags),
+      };
+    }),
+
+  updateTodo: (id, text) =>
+    set((state) => {
+      const { tags } = parseTags(text);
+      const mergedTags = new Set([...state.tags, ...tags]);
+      return {
+        todos: state.todos.map((t) =>
+          t.id === id ? { ...t, text, tags } : t
+        ),
         tags: Array.from(mergedTags),
       };
     }),

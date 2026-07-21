@@ -22,6 +22,7 @@ export function TodoList({
   dimmed,
   onSetStatus,
   onDelete,
+  onUpdate,
   onReorder,
 }: {
   todos: Todo[];
@@ -29,6 +30,7 @@ export function TodoList({
   dimmed?: boolean;
   onSetStatus: (id: string, status: TodoStatus) => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, text: string) => void;
   onReorder: (activeId: string, overId: string) => void;
 }) {
   const sensors = useSensors(
@@ -65,6 +67,7 @@ export function TodoList({
               todo={t}
               onSetStatus={onSetStatus}
               onDelete={onDelete}
+              onUpdate={onUpdate}
             />
           ))}
         </SortableContext>
