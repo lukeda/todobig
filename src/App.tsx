@@ -1,11 +1,18 @@
-import { useMemo } from 'react';
-import { Box, Stack, Text, useMantineTheme, ActionIcon, Group } from '@mantine/core';
-import { X } from 'lucide-react';
-import { useStore } from './store';
-import { TodoInput } from './components/TodoInput';
-import { TodoList } from './components/TodoList';
-import { FilterBar } from './components/FilterBar';
-import { useWindow } from './hooks/useWindow';
+import { useMemo } from "react";
+import {
+  Box,
+  Stack,
+  Text,
+  useMantineTheme,
+  ActionIcon,
+  Group,
+} from "@mantine/core";
+import { X } from "lucide-react";
+import { useStore } from "./store";
+import { TodoInput } from "./components/TodoInput";
+import { TodoList } from "./components/TodoList";
+import { FilterBar } from "./components/FilterBar";
+import { useWindow } from "./hooks/useWindow";
 
 function App() {
   const theme = useMantineTheme();
@@ -27,19 +34,23 @@ function App() {
 
   const { active, completed } = useMemo(() => {
     return {
-      active: todos.filter((t) => t.status !== 'complete'),
-      completed: todos.filter((t) => t.status === 'complete'),
+      active: todos.filter((t) => t.status !== "complete"),
+      completed: todos.filter((t) => t.status === "complete"),
     };
   }, [todos]);
 
   const filteredActive = useMemo(() => {
     if (selectedTags.length === 0) return active;
-    return active.filter((t) => t.tags.some((tag) => selectedTags.includes(tag)));
+    return active.filter((t) =>
+      t.tags.some((tag) => selectedTags.includes(tag)),
+    );
   }, [active, selectedTags]);
 
   const filteredCompleted = useMemo(() => {
     if (selectedTags.length === 0) return completed;
-    return completed.filter((t) => t.tags.some((tag) => selectedTags.includes(tag)));
+    return completed.filter((t) =>
+      t.tags.some((tag) => selectedTags.includes(tag)),
+    );
   }, [completed, selectedTags]);
 
   return (
@@ -54,7 +65,7 @@ function App() {
         px="xs"
         py="xs"
         style={{
-          position: 'sticky',
+          position: "sticky",
           top: 0,
           background: theme.white,
           borderBottom: `1px solid ${theme.colors.gray[2]}`,

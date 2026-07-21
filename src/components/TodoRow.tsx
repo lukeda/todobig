@@ -10,6 +10,7 @@ import {
   Stack,
   Text,
   TextInput,
+  Tooltip,
 } from "@mantine/core";
 import { ChevronDown, Circle, Clock, GripVertical, X } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
@@ -41,6 +42,7 @@ function formatAge(ms: number): string {
   const minutes = Math.floor(ms / (1000 * 60));
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  if (minutes < 1 || minutes === 0) return "now";
   if (days > 0) return `${Math.min(days, 99).toString().padStart(2, "0")}d`;
   if (hours > 0) return `${hours.toString().padStart(2, "0")}h`;
   return `${minutes.toString().padStart(2, "0")}m`;
@@ -59,19 +61,31 @@ function AgeBadge({
   const color = ageColor(elapsed);
 
   return (
-    <Badge
-      variant="light"
-      radius="sm"
-      color="gray"
-      style={{
-        fontSize: 12,
-        color,
-        padding: "0 4px",
-        fontWeight: 400,
-      }}
+    <Tooltip
+      openDelay={0}
+      label={
+        completedAt
+          ? `Completed at ${new Date(completedAt).toLocaleString()}`
+          : `Created at ${new Date(createdAt).toLocaleString()}`
+      }
+      withArrow
     >
-      {label}
-    </Badge>
+      <Badge
+        variant="light"
+        radius="sm"
+        color="gray"
+        style={{
+          fontSize: 12,
+          color,
+          padding: "0 4px",
+          fontWeight: 400,
+          textTransform: "none",
+          textShadow: "1px 1px white",
+        }}
+      >
+        {label}
+      </Badge>
+    </Tooltip>
   );
 }
 
