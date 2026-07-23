@@ -10,12 +10,23 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { ChevronDown, Circle, Clock, GripVertical, X } from "lucide-react";
+import {
+  ChevronDown,
+  Circle,
+  Clock,
+  GripVertical,
+  ListTree,
+  MoreVertical,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Todo, TodoStatus } from "../types";
 import { AgeBadge } from "./AgeBadge";
 import { HashtagBadge } from "./HashtagBadge";
+import { SubTodoProgress } from "./SubTodoProgress";
+import { useNavigate } from "react-router-dom";
 
 const statusLabels: Record<TodoStatus, string> = {
   not_started: "Not started",
@@ -85,20 +96,29 @@ function StatusIndicator({
   );
 }
 
-export function SortableTodoRow({
+export function TodoRow({
   todo,
   onSetStatus,
   onDelete,
   onUpdate,
+  subTodoCount,
+  subTodoCompleted,
+  draggable = true,
 }: {
   todo: Todo;
   onSetStatus: (id: string, status: TodoStatus) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, text: string) => void;
+  subTodoCount?: number;
+  subTodoCompleted?: number;
+  draggable?: boolean;
 }) {
+  const navigate = useNavigate();
+
   const [isEditing, setIsEditing] = React.useState(false);
   const [editText, setEditText] = React.useState(todo.text);
 
+  const sortableResult = useSortable({ id: todo.id });
   const {
     attributes,
     listeners,
@@ -107,13 +127,25 @@ export function SortableTodoRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: todo.id });
+  } = draggable
+    ? sortableResult
+    : {
+        attributes: {},
+        listeners: {},
+        setNodeRef: undefined,
+        setActivatorNodeRef: undefined,
+        transform: null,
+        transition: undefined,
+        isDragging: false,
+      };
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+  const style = draggable
+    ? {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }
+    : {};
 
   const handleSave = React.useCallback(() => {
     const trimmed = editText.trim();
@@ -136,7 +168,6 @@ export function SortableTodoRow({
     },
     [handleSave, todo.text],
   );
-
   return (
     <Card
       withBorder
@@ -147,21 +178,24 @@ export function SortableTodoRow({
       style={style}
     >
       <Group gap="xs" align="center" wrap="nowrap">
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          ref={setActivatorNodeRef}
-          {...attributes}
-          {...listeners}
-          style={{ cursor: "grab" }}
-        >
-          <GripVertical size={14} />
-        </ActionIcon>
+        {draggable && (
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+            style={{ cursor: "grab" }}
+          >
+            <GripVertical size={14} />
+          </ActionIcon>
+        )}
         <StatusIndicator
           status={todo.status}
           onSetStatus={(status) => onSetStatus(todo.id, status)}
         />
         <AgeBadge createdAt={todo.createdAt} completedAt={todo.completedAt} />
+
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
           {isEditing ? (
             <TextInput
@@ -174,15 +208,7 @@ export function SortableTodoRow({
               style={{ flex: 1 }}
             />
           ) : (
-            <Group
-              gap={4}
-              wrap="nowrap"
-              align="center"
-              style={{ flex: 1 }}
-              className={
-                "border border-transparent p-0.5 rounded hover:border-blue-300 transition"
-              }
-            >
+            <Group gap={4} wrap="nowrap" align="center" style={{ flex: 1 }}>
               <Text
                 size="sm"
                 style={{
@@ -191,9 +217,7 @@ export function SortableTodoRow({
                   textDecoration:
                     todo.status === "complete" ? "line-through" : undefined,
                   flex: 1,
-                  cursor: "pointer",
                 }}
-                onClick={() => setIsEditing(true)}
               >
                 {todo.text
                   .split(/(#\w+)/g)
@@ -208,15 +232,50 @@ export function SortableTodoRow({
             </Group>
           )}
         </Stack>
-        <ActionIcon
-          variant="subtle"
-          color="red"
-          onClick={() => onDelete(todo.id)}
-          aria-label="Delete"
-        >
-          <X size={18} />
-        </ActionIcon>
+        <Group gap="xs">
+          {subTodoCount !== undefined && subTodoCount > 0 && (
+            <SubTodoProgress
+              onClick={() => navigate(`/todo/${todo.id}`)}
+              completed={subTodoCompleted ?? 0}
+              total={subTodoCount}
+            />
+          )}
+          <Menu shadow="md" width={160} position="bottom-end">
+            <Menu.Target>
+              <ActionIcon variant="subtle" color="gray" aria-label="Actions">
+                <MoreVertical size={18} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={<ListTree size={14} />}
+                onClick={() => navigate(`/todo/${todo.id}`)}
+              >
+                Sub-tasks
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<Pencil size={14} />}
+                onClick={() => {
+                  setTimeout(() => {
+                    setIsEditing(true);
+                  }, 100);
+                }}
+              >
+                Edit
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<Trash2 size={14} />}
+                color="red"
+                onClick={() => onDelete(todo.id)}
+              >
+                Delete
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       </Group>
     </Card>
   );
 }
+
+export const SortableTodoRow = TodoRow;

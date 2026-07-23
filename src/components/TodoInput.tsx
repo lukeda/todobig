@@ -14,9 +14,11 @@ import { parseTags, type Todo } from "../types";
 export function TodoInput({
   onAdd,
   tags,
+  parentId,
 }: {
   onAdd: (todo: Todo) => void;
   tags: string[];
+  parentId?: string;
 }) {
   const theme = useMantineTheme();
   const [draft, setDraft] = useState("");
@@ -55,6 +57,7 @@ export function TodoInput({
       tags: parsedTags,
       status: "not_started",
       createdAt: Date.now(),
+      parentId,
     });
     setDraft("");
   };

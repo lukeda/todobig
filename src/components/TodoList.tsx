@@ -1,4 +1,4 @@
-import { Stack, Text } from '@mantine/core';
+import { Stack, Text } from "@mantine/core";
 import {
   DndContext,
   closestCenter,
@@ -6,15 +6,15 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+} from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import type { Todo, TodoStatus } from '../types';
-import { SortableTodoRow } from './TodoRow';
+} from "@dnd-kit/sortable";
+import type { Todo, TodoStatus } from "../types";
+import { SortableTodoRow } from "./TodoRow";
 
 export function TodoList({
   todos,
@@ -24,6 +24,7 @@ export function TodoList({
   onDelete,
   onUpdate,
   onReorder,
+  subTodoCounts,
 }: {
   todos: Todo[];
   title: string;
@@ -32,6 +33,7 @@ export function TodoList({
   onDelete: (id: string) => void;
   onUpdate: (id: string, text: string) => void;
   onReorder: (activeId: string, overId: string) => void;
+  subTodoCounts?: Record<string, { total: number; completed: number }>;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -68,6 +70,8 @@ export function TodoList({
               onSetStatus={onSetStatus}
               onDelete={onDelete}
               onUpdate={onUpdate}
+              subTodoCount={subTodoCounts?.[t.id]?.total}
+              subTodoCompleted={subTodoCounts?.[t.id]?.completed}
             />
           ))}
         </SortableContext>

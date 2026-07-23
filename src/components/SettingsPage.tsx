@@ -1,12 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { Box, Stack, Text, ActionIcon, Group } from "@mantine/core";
 import { ArrowLeft } from "lucide-react";
 import { MonitorSelector } from "./MonitorSelector";
 
-interface SettingsPageProps {
-  onBack: () => void;
-}
-
-export function SettingsPage({ onBack }: SettingsPageProps) {
+export function SettingsPage() {
+  const navigate = useNavigate();
   return (
     <Box mih="100vh">
       <Group
@@ -25,7 +23,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
           variant="subtle"
           color="gray"
           size="sm"
-          onClick={onBack}
+          onClick={() => navigate("/")}
           title="Back to tasks"
         >
           <ArrowLeft size={16} />
