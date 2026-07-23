@@ -13,6 +13,7 @@ interface AppState {
   tagPopoverOpened: boolean;
   migrated: boolean;
   now: number;
+  preferredMonitor: string | null;
 
   addTodo: (todo: Todo) => void;
   updateTodo: (id: string, text: string) => void;
@@ -23,6 +24,7 @@ interface AppState {
   setCustomTagColors: (colors: Record<string, TagColor>) => void;
   updateCustomTagColor: (tag: string, color: Partial<TagColor>) => void;
   setTagPopoverOpened: (opened: boolean) => void;
+  setPreferredMonitor: (monitor: string | null) => void;
   [key: string]: unknown;
 }
 
@@ -34,6 +36,7 @@ export const useStore = create<AppState>((set) => ({
   tagPopoverOpened: false,
   migrated: false,
   now: Date.now(),
+  preferredMonitor: null,
 
   addTodo: (todo) =>
     set((state) => {
@@ -95,6 +98,8 @@ export const useStore = create<AppState>((set) => ({
     })),
 
   setTagPopoverOpened: (opened) => set({ tagPopoverOpened: opened }),
+  
+  setPreferredMonitor: (monitor) => set({ preferredMonitor: monitor }),
 }));
 
 export const tauriHandler = createTauriStore("todobig-storage", useStore, {

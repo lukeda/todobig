@@ -4,9 +4,24 @@ use tauri::{
   LogicalPosition, LogicalSize, Manager, Monitor, PhysicalPosition,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::RwLock;
+use serde::{Deserialize, Serialize};
 
 struct ToggleState {
-  visible: AtomicBool, // desired panel visibility
+  visible: AtomicBool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MonitorInfo {
+  pub name: Option<String>,
+  pub is_primary: bool,
+  pub position: (i32, i32),
+  pub size: (u32, u32),
+  pub scale_factor: f64,
+}
+
+pub struct MonitorPreference {
+  pub preferred_monitor: RwLock<Option<String>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -15,6 +30,7 @@ pub fn run() {
   std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
 
   tauri::Builder::default()
+    .invoke_handler(tauri::generate_handler![get_monitors, set_preferred_monitor, get_preferred_monitor])
     // MUST be the first plugin registered, and on the Builder rather than inside
     // setup(): Tauri initializes plugins during build() BEFORE setup() runs and
     // creates the config windows, so registering it in setup() is too late.
@@ -81,7 +97,11 @@ pub fn run() {
         app.handle().plugin(tauri_plugin_positioner::init())?;
 
         app.manage(ToggleState {
-          visible: AtomicBool::new(false), // window config is visible:false
+          visible: AtomicBool::new(false),
+        });
+
+        app.manage(MonitorPreference {
+          preferred_monitor: RwLock::new(None),
         });
 
         let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -126,7 +146,7 @@ pub fn run() {
 }
 
 /// Resolve which monitor to show the panel on.
-/// Priority: explicit hint (tray click position) -> cursor position -> primary monitor.
+/// Priority: explicit hint (tray click position) -> stored preference (or next available) -> cursor position -> primary monitor.
 /// NOTE: touches GTK/X11 — must be called on the GTK main thread.
 fn resolve_monitor(
   window: &tauri::WebviewWindow,
@@ -137,6 +157,24 @@ fn resolve_monitor(
       return Ok(m);
     }
   }
+  
+  let pref = window.app_handle().state::<MonitorPreference>();
+  if let Ok(pref_guard) = pref.preferred_monitor.read() {
+    if let Some(ref monitor_name) = *pref_guard {
+      if let Ok(monitors) = window.available_monitors() {
+        for m in &monitors {
+          if m.name() == Some(&monitor_name) {
+            return Ok(m.clone());
+          }
+        }
+        
+        if !monitors.is_empty() {
+          return Ok(monitors[0].clone());
+        }
+      }
+    }
+  }
+  
   if let Ok(cursor) = window.cursor_position() {
     if let Ok(Some(m)) = window.monitor_from_point(cursor.x, cursor.y) {
       return Ok(m);
@@ -242,4 +280,45 @@ fn toggle_window(window: &tauri::WebviewWindow, hint: Option<PhysicalPosition<f6
   }) {
     eprintln!("toggle_window: run_on_main_thread dispatch failed: {e}");
   }
+}
+
+#[tauri::command]
+fn get_monitors(window: tauri::WebviewWindow) -> Result<Vec<MonitorInfo>, String> {
+  let monitors = window.available_monitors().map_err(|e| e.to_string())?;
+  let primary = window.primary_monitor().map_err(|e| e.to_string())?;
+  
+  let monitor_infos: Vec<MonitorInfo> = monitors
+    .into_iter()
+    .map(|m| {
+      let is_primary = primary
+        .as_ref()
+        .map(|p| p.name() == m.name())
+        .unwrap_or(false);
+      
+      MonitorInfo {
+        name: m.name().map(|s| s.to_string()),
+        is_primary,
+        position: (m.position().x, m.position().y),
+        size: (m.size().width, m.size().height),
+        scale_factor: m.scale_factor(),
+      }
+    })
+    .collect();
+  
+  Ok(monitor_infos)
+}
+
+#[tauri::command]
+fn set_preferred_monitor(app: tauri::AppHandle, monitor_name: Option<String>) -> Result<(), String> {
+  let pref = app.state::<MonitorPreference>();
+  let mut pref_guard = pref.preferred_monitor.write().map_err(|e| e.to_string())?;
+  *pref_guard = monitor_name;
+  Ok(())
+}
+
+#[tauri::command]
+fn get_preferred_monitor(app: tauri::AppHandle) -> Result<Option<String>, String> {
+  let pref = app.state::<MonitorPreference>();
+  let pref_guard = pref.preferred_monitor.read().map_err(|e| e.to_string())?;
+  Ok(pref_guard.clone())
 }

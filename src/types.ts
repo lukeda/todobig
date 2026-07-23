@@ -16,3 +16,11 @@ export function parseTags(input: string): { text: string; tags: string[] } {
   const text = input.trim();
   return { text, tags: uniqueTags };
 }
+
+export interface MonitorInfo {
+  name: string | null;
+  is_primary: boolean;
+  position: [number, number];
+  size: [number, number];
+  scale_factor: number;
+}

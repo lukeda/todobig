@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Box,
   Stack,
@@ -7,16 +7,18 @@ import {
   ActionIcon,
   Group,
 } from "@mantine/core";
-import { X } from "lucide-react";
+import { X, Settings } from "lucide-react";
 import { useStore } from "./store";
 import { TodoInput } from "./components/TodoInput";
 import { TodoList } from "./components/TodoList";
 import { FilterBar } from "./components/FilterBar";
 import { useWindow } from "./hooks/useWindow";
+import { SettingsPage } from "./components/SettingsPage";
 
 function App() {
   const theme = useMantineTheme();
   const { hideWindow } = useWindow();
+  const [showSettings, setShowSettings] = useState(false);
   const todos = useStore((s) => s.todos);
   const selectedTags = useStore((s) => s.selectedTags);
   const addTodo = useStore((s) => s.addTodo);
@@ -53,6 +55,10 @@ function App() {
     );
   }, [completed, selectedTags]);
 
+  if (showSettings) {
+    return <SettingsPage onBack={() => setShowSettings(false)} />;
+  }
+
   return (
     <Box
       mih="100vh"
@@ -61,7 +67,7 @@ function App() {
       }}
     >
       <Group
-        justify="flex-end"
+        justify="space-between"
         px="xs"
         py="xs"
         style={{
@@ -73,6 +79,15 @@ function App() {
         }}
         data-tauri-drag-region
       >
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          size="sm"
+          onClick={() => setShowSettings(true)}
+          title="Settings"
+        >
+          <Settings size={16} />
+        </ActionIcon>
         <ActionIcon
           variant="subtle"
           color="gray"
