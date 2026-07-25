@@ -1,7 +1,6 @@
 import { Group, MultiSelect } from "@mantine/core";
 import { Filter } from "lucide-react";
 import { useStore } from "../store";
-import { TagManagerPopover } from "./TagManagerPopover";
 
 export function FilterBar({ availableTags }: { availableTags: string[] }) {
   const selectedTags = useStore((s) => s.selectedTags);
@@ -29,8 +28,6 @@ export function FilterBar({ availableTags }: { availableTags: string[] }) {
           input: { backgroundColor: "white" },
         }}
       />
-
-      <TagManagerPopover availableTags={availableTags} />
     </Group>
   );
 }

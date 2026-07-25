@@ -74,6 +74,7 @@ function StatusIndicator({
           leftSection={<Circle size={14} />}
           onClick={() => onSetStatus("not_started")}
           fw={status === "not_started" ? 600 : 400}
+          disabled={status === "not_started"}
         >
           {statusLabels.not_started}
         </Menu.Item>
@@ -81,6 +82,7 @@ function StatusIndicator({
           leftSection={<Clock size={14} />}
           onClick={() => onSetStatus("in_progress")}
           fw={status === "in_progress" ? 600 : 400}
+          disabled={status === "in_progress"}
         >
           {statusLabels.in_progress}
         </Menu.Item>
@@ -88,6 +90,7 @@ function StatusIndicator({
           leftSection={<Checkbox size="xs" checked readOnly />}
           onClick={() => onSetStatus("complete")}
           fw={status === "complete" ? 600 : 400}
+          disabled={status === "complete"}
         >
           {statusLabels.complete}
         </Menu.Item>

@@ -14,6 +14,8 @@ interface AppState {
   migrated: boolean;
   now: number;
   preferredMonitor: string | null;
+  rootTodos: Todo[];
+  availableTags: string[];
 
   addTodo: (todo: Todo) => void;
   updateTodo: (id: string, text: string) => void;
@@ -28,6 +30,16 @@ interface AppState {
   [key: string]: unknown;
 }
 
+function computeRootTodos(todos: Todo[]): Todo[] {
+  return todos.filter((t) => !t.parentId);
+}
+
+function computeAvailableTags(rootTodos: Todo[]): string[] {
+  const tagSet = new Set<string>();
+  rootTodos.forEach((t) => t.tags.forEach((tag) => tagSet.add(tag)));
+  return Array.from(tagSet).sort();
+}
+
 export const useStore = create<AppState>((set) => ({
   todos: [],
   tags: [],
@@ -37,13 +49,19 @@ export const useStore = create<AppState>((set) => ({
   migrated: false,
   now: Date.now(),
   preferredMonitor: null,
+  rootTodos: [],
+  availableTags: [],
 
   addTodo: (todo) =>
     set((state) => {
       const mergedTags = new Set([...state.tags, ...todo.tags]);
+      const newTodos = [todo, ...state.todos];
+      const rootTodos = computeRootTodos(newTodos);
       return {
-        todos: [todo, ...state.todos],
+        todos: newTodos,
         tags: Array.from(mergedTags),
+        rootTodos,
+        availableTags: computeAvailableTags(rootTodos),
       };
     }),
 
@@ -51,17 +69,21 @@ export const useStore = create<AppState>((set) => ({
     set((state) => {
       const { tags } = parseTags(text);
       const mergedTags = new Set([...state.tags, ...tags]);
+      const newTodos = state.todos.map((t) =>
+        t.id === id ? { ...t, text, tags } : t
+      );
+      const rootTodos = computeRootTodos(newTodos);
       return {
-        todos: state.todos.map((t) =>
-          t.id === id ? { ...t, text, tags } : t
-        ),
+        todos: newTodos,
         tags: Array.from(mergedTags),
+        rootTodos,
+        availableTags: computeAvailableTags(rootTodos),
       };
     }),
 
   setTodoStatus: (id, status) =>
-    set((state) => ({
-      todos: state.todos.map((t) =>
+    set((state) => {
+      const newTodos = state.todos.map((t) =>
         t.id === id
           ? {
               ...t,
@@ -69,20 +91,38 @@ export const useStore = create<AppState>((set) => ({
               completedAt: status === "complete" ? Date.now() : undefined,
             }
           : t
-      ),
-    })),
+      );
+      const rootTodos = computeRootTodos(newTodos);
+      return {
+        todos: newTodos,
+        rootTodos,
+        availableTags: computeAvailableTags(rootTodos),
+      };
+    }),
 
   deleteTodo: (id) =>
-    set((state) => ({
-      todos: state.todos.filter((t) => t.id !== id),
-    })),
+    set((state) => {
+      const newTodos = state.todos.filter((t) => t.id !== id);
+      const rootTodos = computeRootTodos(newTodos);
+      return {
+        todos: newTodos,
+        rootTodos,
+        availableTags: computeAvailableTags(rootTodos),
+      };
+    }),
 
   reorderTodos: (activeId, overId) =>
     set((state) => {
       const oldIndex = state.todos.findIndex((t) => t.id === activeId);
       const newIndex = state.todos.findIndex((t) => t.id === overId);
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return state;
-      return { todos: arrayMove(state.todos, oldIndex, newIndex) };
+      const newTodos = arrayMove(state.todos, oldIndex, newIndex);
+      const rootTodos = computeRootTodos(newTodos);
+      return {
+        todos: newTodos,
+        rootTodos,
+        availableTags: computeAvailableTags(rootTodos),
+      };
     }),
 
   setSelectedTags: (tags) => set({ selectedTags: tags }),
@@ -106,6 +146,19 @@ export const tauriHandler = createTauriStore("todobig-storage", useStore, {
   saveOnChange: true,
   saveStrategy: "debounce",
   saveInterval: 1000,
+  hooks: {
+    beforeFrontendSync: (state) => {
+      if (state.todos) {
+        const rootTodos = computeRootTodos(state.todos as Todo[]);
+        return {
+          ...state,
+          rootTodos,
+          availableTags: computeAvailableTags(rootTodos),
+        };
+      }
+      return state;
+    },
+  },
 });
 
 setInterval(() => {

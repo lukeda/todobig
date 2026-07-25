@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { Box, Stack, Text } from "@mantine/core";
 import { useStore } from "../store";
 import { TodoInput } from "../components/TodoInput";
@@ -7,8 +6,9 @@ import { TodoList } from "../components/TodoList";
 import { FilterBar } from "../components/FilterBar";
 
 export function HomePage() {
-  const navigate = useNavigate();
   const todos = useStore((s) => s.todos);
+  const rootTodos = useStore((s) => s.rootTodos);
+  const availableTags = useStore((s) => s.availableTags);
   const selectedTags = useStore((s) => s.selectedTags);
   const addTodo = useStore((s) => s.addTodo);
   const updateTodo = useStore((s) => s.updateTodo);
@@ -16,10 +16,6 @@ export function HomePage() {
   const deleteTodo = useStore((s) => s.deleteTodo);
   const reorderTodos = useStore((s) => s.reorderTodos);
   const tags = useStore((s) => s.tags);
-
-  const rootTodos = useMemo(() => {
-    return todos.filter((t) => !t.parentId);
-  }, [todos]);
 
   const subTodoCounts = useMemo(() => {
     const counts: Record<string, { total: number; completed: number }> = {};
@@ -36,12 +32,6 @@ export function HomePage() {
     });
     return counts;
   }, [todos]);
-
-  const availableTags = useMemo(() => {
-    const tagSet = new Set<string>();
-    rootTodos.forEach((t) => t.tags.forEach((tag) => tagSet.add(tag)));
-    return Array.from(tagSet).sort();
-  }, [rootTodos]);
 
   const { active, completed } = useMemo(() => {
     return {
@@ -78,7 +68,6 @@ export function HomePage() {
           onDelete={deleteTodo}
           onUpdate={updateTodo}
           onReorder={reorderTodos}
-          onClick={(id) => navigate(`/todo/${id}`)}
           subTodoCounts={subTodoCounts}
         />
 
@@ -90,7 +79,6 @@ export function HomePage() {
           onDelete={deleteTodo}
           onUpdate={updateTodo}
           onReorder={reorderTodos}
-          onClick={(id) => navigate(`/todo/${id}`)}
           subTodoCounts={subTodoCounts}
         />
 
